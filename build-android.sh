@@ -291,6 +291,15 @@ then
   done
 fi
 
+# When creating shared boost libraries, the linker asks for crtbegin_so.o
+# and crtend_so.o object files but can't find them even though path
+# to it is specified using the -L linker flag. Copying those files to
+# boost root directory solves the problem (would be nice if a cleaner
+# solution was found).
+export AndroidPlatform=android-9
+cp $AndroidNDKRoot/platforms/$AndroidPlatform/arch-arm/usr/lib/crtbegin_so.o $BOOST_DIR/
+cp $AndroidNDKRoot/platforms/$AndroidPlatform/arch-arm/usr/lib/crtend_so.o   $BOOST_DIR/
+
 echo "# ---------------"
 echo "# Build using NDK"
 echo "# ---------------"
@@ -301,6 +310,7 @@ echo "Building boost for android"
   cd $BOOST_DIR
   export PATH=`dirname $CXXPATH`:$PATH
   export AndroidNDKRoot=$AndroidNDKRoot
+  export AndroidPlatform
   export NO_BZIP2=1
 
   cxxflags=""
@@ -309,7 +319,7 @@ echo "Building boost for android"
   ./bjam -q                           \
          toolset=$TOOLSET             \
          $cxxflags                    \
-         link=static                  \
+         link=shared                  \
          threading=multi              \
          --layout=versioned           \
          install 2>&1                 \

@@ -1,0 +1,11 @@
+--- boost_1_53_0_vanila/tools/build/v2/tools/gcc.jam	2013-04-19 12:58:09.151536596 +0200
++++ boost_1_53_0/tools/build/v2/tools/gcc.jam	2013-08-10 01:54:29.473855104 +0200
+@@ -1068,7 +1068,7 @@
+             case * :
+             {
+                 option = -pthread ;
+-                libs = rt ;
++                #libs = rt ;
+             }
+         }
+     
