@@ -1,3 +1,32 @@
+diff -ur boost_1_54_0.orig/libs/log/src/threadsafe_queue.cpp boost_1_54_0/libs/log/src/threadsafe_queue.cpp
+--- boost_1_54_0.orig/libs/log/src/threadsafe_queue.cpp 2013-06-17 23:20:22.000000000 +0200
++++ boost_1_54_0/libs/log/src/threadsafe_queue.cpp  2015-08-18 14:00:00.673204293 +0200
+@@ -47,16 +47,16 @@
+ #endif
+
+ #if defined(__APPLE__) || defined(__APPLE_CC__) || defined(macintosh)
+-#include <AvailabilityMacros.h>
+-#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && (MAC_OS_X_VERSION_MIN_REQUIRED >= 1060)
+-// Mac OS X 10.6 and later have posix_memalign
+-#define BOOST_LOG_HAS_POSIX_MEMALIGN 1
+-#endif
++#  include <AvailabilityMacros.h>
++#  if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && (MAC_OS_X_VERSION_MIN_REQUIRED >= 1060)
++     // Mac OS X 10.6 and later have posix_memalign
++#    define BOOST_LOG_HAS_POSIX_MEMALIGN 1
++#  endif
+ #elif (defined(_POSIX_VERSION) && (_POSIX_VERSION >= 200112L)) || (defined(_XOPEN_SOURCE) && (_XOPEN_SOURCE >= 600))
+-// Solaris 10 does not have posix_memalign. Solaris 11 and later seem to have it.
+-#if !(defined(sun) || defined(__sun)) || defined(__SunOS_5_11) || defined(__SunOS_5_12)
+-#define BOOST_LOG_HAS_POSIX_MEMALIGN 1
+-#endif
++   // Solaris 10 and Android with API version < 16 do not have posix_memalign. Solaris 11 and later seem to have it.
++#  if (!defined(__ANDROID__) || __ANDROID_API__ >= 16) && !(defined(sun) || defined(__sun)) || defined(__SunOS_5_11) || defined(__SunOS_5_12)
++#    define BOOST_LOG_HAS_POSIX_MEMALIGN 1
++#  endif
+ #endif
+
+ #if defined(BOOST_WINDOWS)
 diff -ruN boost_1_54_0/libs/filesystem/src/path.cpp boost_1_54_0_patched/libs/filesystem/src/path.cpp
 --- boost_1_54_0/libs/filesystem/src/path.cpp	2012-04-16 15:36:28.000000000 +0200
 +++ boost_1_54_0_patched/libs/filesystem/src/path.cpp	2013-10-28 02:55:32.773380890 +0100
