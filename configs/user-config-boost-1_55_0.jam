@@ -39,6 +39,7 @@
 
 import os ;
 local AndroidNDKRoot = [ os.environ AndroidNDKRoot ] ;
+local AndroidPlatform = [ os.environ AndroidPlatform ] ;
 
 # --------------------------------------------------------------------
 # Is same for 8b, 8c and 8d
@@ -65,7 +66,7 @@ arm-linux-androideabi-g++
 <compileflags>-fomit-frame-pointer
 <compileflags>-fno-strict-aliasing
 <compileflags>-finline-limit=64
-<compileflags>-I$(AndroidNDKRoot)/platforms/android-9/arch-arm/usr/include
+<compileflags>-I$(AndroidNDKRoot)/platforms/$(AndroidPlatform)/arch-arm/usr/include
 <compileflags>-Wa,--noexecstack
 <compileflags>-DANDROID
 <compileflags>-D__ANDROID__
@@ -108,7 +109,7 @@ arm-linux-androideabi-g++
 <compileflags>-fomit-frame-pointer
 <compileflags>-fno-strict-aliasing
 <compileflags>-finline-limit=64
-<compileflags>-I$(AndroidNDKRoot)/platforms/android-9/arch-arm/usr/include
+<compileflags>-I$(AndroidNDKRoot)/platforms/$(AndroidPlatform)/arch-arm/usr/include
 <compileflags>-Wa,--noexecstack
 <compileflags>-DANDROID
 <compileflags>-D__ANDROID__
@@ -128,7 +129,7 @@ arm-linux-androideabi-g++
 ;
 
 # --------------------------------------------------------------------
-using gcc : androidR10e
+using gcc : androidR10e_armeabi_v7a
 :
 arm-linux-androideabi-g++
 :
@@ -147,29 +148,69 @@ arm-linux-androideabi-g++
 <compileflags>-mtune=xscale
 <compileflags>-msoft-float
 <compileflags>-mthumb
-<compileflags>-Os
+<compileflags>-O3
 <compileflags>-fomit-frame-pointer
 <compileflags>-fno-strict-aliasing
 <compileflags>-finline-limit=64
-<compileflags>-I$(AndroidNDKRoot)/platforms/android-9/arch-arm/usr/include
+<compileflags>-I$(AndroidNDKRoot)/platforms/$(AndroidPlatform)/arch-arm/usr/include
 <compileflags>-Wa,--noexecstack
 <compileflags>-DANDROID
 <compileflags>-D__ANDROID__
 <compileflags>-DNDEBUG
-<compileflags>-O2
-<compileflags>-g
-<compileflags>-I$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.8/include
-<compileflags>-I$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.8/libs/armeabi/include
+<compileflags>-I$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.9/include
+<compileflags>-I$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include
 # @Moss - Above are the 'oficial' android flags
 <architecture>arm
 <compileflags>-fvisibility=hidden
 <compileflags>-fvisibility-inlines-hidden
 <compileflags>-fdata-sections
+<linkflags>-L$(AndroidNDKRoot)/platforms/$(AndroidPlatform)/arch-arm/usr/lib
+<linkflags>-L$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/thumb
+<linkflags>-lgnustl_shared
 <cxxflags>-D__arm__
 <cxxflags>-D_REENTRANT
 <cxxflags>-D_GLIBCXX__PTHREADS
+<cxxflags>-std=c++11
 ;
 
+# --------------------------------------------------------------------
+using gcc : androidR10e_x86
+:
+i686-linux-android-g++
+:
+<archiver>i686-linux-android-ar
+<compileflags>-fexceptions
+<compileflags>-frtti
+<compileflags>-fpic
+<compileflags>-ffunction-sections
+<compileflags>-funwind-tables
+<compileflags>-fstack-protector
+<compileflags>-no-canonical-prefixes
+#<compileflags>--target=i686-none-linux-android
+<compileflags>-O3
+<compileflags>-fomit-frame-pointer
+<compileflags>-fstrict-aliasing
+<compileflags>-I$(AndroidNDKRoot)/platforms/$(AndroidPlatform)/arch-x86/usr/include
+<compileflags>-Wa,--noexecstack
+<compileflags>-DANDROID
+<compileflags>-D__ANDROID__
+<compileflags>-DNDEBUG
+<compileflags>-I$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.9/include
+<compileflags>-I$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.9/libs/x86/include
+# @Moss - Above are the 'oficial' android flags
+#<architecture>i686
+<compileflags>-fvisibility=hidden
+<compileflags>-fvisibility-inlines-hidden
+<compileflags>-fdata-sections
+<linkflags>--target=i686-none-linux-android
+<linkflags>--sysroot=$(AndroidNDKRoot)/platforms/android-14/arch-x86
+<linkflags>-L$(AndroidNDKRoot)/platforms/$(AndroidPlatform)/arch-x86/usr/lib
+<linkflags>-L$(AndroidNDKRoot)/sources/cxx-stl/gnu-libstdc++/4.9/libs/x86
+<linkflags>-lgnustl_shared
+<cxxflags>-D_REENTRANT
+<cxxflags>-D_GLIBCXX__PTHREADS
+<cxxflags>-std=c++11
+;
 
 # ------------------
 # GCC configuration.

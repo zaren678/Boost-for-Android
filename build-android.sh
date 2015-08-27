@@ -63,7 +63,7 @@ boost_version()
   fi
 }
 
-register_option "--toolchain=<toolchain>" select_toolchain "Select a toolchain. To see available execute ls -l ANDROID_NDK/toolchains."
+register_option "--toolchain=<toolchain>" select_toolchain "Select a toolchain. [4.8, 4.9, clang3.5, or clang3.6]"
 select_toolchain () {
     TOOLCHAIN=$1
 }
@@ -82,17 +82,37 @@ do_download ()
 	CLEAN=yes
 }
 
+SHARED=no
+LINK_STR=static
+register_option "--shared" do_shared "Build shared library versions of boost, linked against gnustl_shared"
+do_shared(){
+  SHARED=yes
+  LINK_STR=shared
+}
+
+ANDROID_PLATFORM=android-14
+register_option "--android-platform=<platform>" do_android_platform "android platform in the form android-14"
+do_android_platform(){
+  ANDROID_PLATFORM=$1
+}
+
+ANDROID_ABI=armeabi-v7a
+register_option "--android-abi=<abi>" do_android_abi "android platform [armeabi-v7a, x86]"
+do_android_abi(){
+  ANDROID_ABI=$1
+}
+
 #LIBRARIES=--with-libraries=date_time,filesystem,program_options,regex,signals,system,thread,iostreams,locale
 LIBRARIES=
 register_option "--with-libraries=<list>" do_with_libraries "Comma separated list of libraries to build."
-do_with_libraries () { 
-  for lib in $(echo $1 | tr ',' '\n') ; do LIBRARIES="--with-$lib ${LIBRARIES}"; done 
+do_with_libraries () {
+  for lib in $(echo $1 | tr ',' '\n') ; do LIBRARIES="--with-$lib ${LIBRARIES}"; done
 }
 
 register_option "--without-libraries=<list>" do_without_libraries "Comma separated list of libraries to exclude from the build."
 do_without_libraries () {	LIBRARIES="--without-libraries=$1"; }
-do_without_libraries () { 
-  for lib in $(echo $1 | tr ',' '\n') ; do LIBRARIES="--without-$lib ${LIBRARIES}"; done 
+do_without_libraries () {
+  for lib in $(echo $1 | tr ',' '\n') ; do LIBRARIES="--without-$lib ${LIBRARIES}"; done
 }
 
 register_option "--prefix=<path>" do_prefix "Prefix to be used when installing libraries and includes."
@@ -125,10 +145,10 @@ BUILD_DIR="./build/"
 if [ $CLEAN = yes ] ; then
 	echo "Cleaning: $BUILD_DIR"
 	rm -f -r $PROGDIR/$BUILD_DIR
-	
+
 	echo "Cleaning: $BOOST_DIR"
 	rm -f -r $PROGDIR/$BOOST_DIR
-	
+
 	echo "Cleaning: $BOOST_TAR"
 	rm -f $PROGDIR/$BOOST_TAR
 
@@ -150,10 +170,10 @@ if [ -d "$PROGDIR/$BOOST_DIR" ]; then
 	rm -f -r $PROGDIR/$BOOST_DIR
 fi
 
-if [ -d "$PROGDIR/$BUILD_DIR" ]; then
-	echo "Cleaning: $BUILD_DIR"
-	rm -f -r $PROGDIR/$BUILD_DIR
-fi
+#if [ -d "$PROGDIR/$BUILD_DIR" ]; then
+#	echo "Cleaning: $BUILD_DIR"
+#	rm -f -r $PROGDIR/$BUILD_DIR
+#fi
 
 
 AndroidNDKRoot=$PARAMETERS
@@ -216,6 +236,7 @@ fi
 
 echo "Detected Android NDK version $NDK_RN"
 
+ADD_PATHS=()
 case "$NDK_RN" in
 	4*)
 		TOOLCHAIN=${TOOLCHAIN:-arm-eabi-4.4.0}
@@ -263,9 +284,22 @@ case "$NDK_RN" in
 		TOOLSET=gcc-androidR8e
 		;;
 	"10e (64-bit)"|"10e-rc4 (64-bit)")
-		TOOLCHAIN=${TOOLCHAIN:-arm-linux-androideabi-4.8}
-		CXXPATH=$AndroidNDKRoot/toolchains/${TOOLCHAIN}/prebuilt/${PlatformOS}-x86_64/bin/arm-linux-androideabi-g++
-		TOOLSET=gcc-androidR10e
+    ARM_TOOLCHAIN=arm-linux-androideabi-$TOOLCHAIN
+    ARM_PATH=$AndroidNDKRoot/toolchains/$ARM_TOOLCHAIN/prebuilt/${PlatformOS}-x86_64/bin
+    X86_TOOLCHAIN=x86-$TOOLCHAIN
+    X86_PATH=$AndroidNDKRoot/toolchains/$X86_TOOLCHAIN/prebuilt/${PlatformOS}-x86_64/bin
+    ADD_PATHS+=("$ARM_PATH")
+    ADD_PATHS+=("$X86_PATH")
+    if [ "$ANDROID_ABI" = "armeabi-v7a" ] ; then
+		    TOOLCHAIN=$ARM_TOOLCHAIN
+        TOOLSET=gcc-androidR10e_armeabi_v7a
+        CXXPATH=$ARM_PATH/arm-linux-androideabi-g++
+    elif [ "$ANDROID_ABI" = "x86" ] ; then
+        TOOLCHAIN=$X86_TOOLCHAIN
+        TOOLSET=gcc-androidR10e_x86
+        CXXPATH=$X86_PATH/i686-linux-android-g++
+    fi
+
 		;;
 	*)
 		echo "Undefined or not supported Android NDK version!"
@@ -276,7 +310,7 @@ if [ -n "${AndroidSourcesDetected}" ]; then # Overwrite CXXPATH if we are buildi
     CXXPATH="${ANDROID_TOOLCHAIN}/arm-linux-androideabi-g++"
 fi
 
-echo Building with TOOLSET=$TOOLSET CXXPATH=$CXXPATH CXXFLAGS=$CXXFLAGS | tee $PROGDIR/build.log
+echo Building with TOOLSET=$TOOLSET CXXPATH=$CXXPATH CXXFLAGS=$CXXFLAGS LINK=$LINK_STR ANDROID_PLATFORM=$ANDROID_PLATFORM ANDROID_ABI=$ANDROID_ABI | tee $PROGDIR/build.log
 
 # Check if the ndk is valid or not
 if [ ! -f $CXXPATH ]
@@ -326,7 +360,7 @@ then
   # Make the initial bootstrap
   echo "Performing boost bootstrap"
 
-  cd $BOOST_DIR 
+  cd $BOOST_DIR
   case "$HOST_OS" in
     windows)
         cmd //c "bootstrap.bat" 2>&1 | tee -a $PROGDIR/build.log
@@ -341,7 +375,7 @@ then
   	exit 1
   fi
   cd $PROGDIR
-  
+
   # -------------------------------------------------------------
   # Patching will be done only if we had a successfull bootstrap!
   # -------------------------------------------------------------
@@ -382,6 +416,15 @@ then
   done
 fi
 
+# When creating shared boost libraries, the linker asks for crtbegin_so.o
+# and crtend_so.o object files but can't find them even though path
+# to it is specified using the -L linker flag. Copying those files to
+# boost root directory solves the problem (would be nice if a cleaner
+# solution was found).
+export AndroidPlatform=$ANDROID_PLATFORM
+cp $AndroidNDKRoot/platforms/$AndroidPlatform/arch-arm/usr/lib/crtbegin_so.o $BOOST_DIR/
+cp $AndroidNDKRoot/platforms/$AndroidPlatform/arch-arm/usr/lib/crtend_so.o   $BOOST_DIR/
+
 echo "# ---------------"
 echo "# Build using NDK"
 echo "# ---------------"
@@ -408,19 +451,29 @@ echo "Building boost for android"
   # `AndroidBinariesPath` could be used by user-config-boost-*.jam
   export AndroidBinariesPath=`dirname $CXXPATH`
   export PATH=$AndroidBinariesPath:$PATH
+
+  for array_item in "${ADD_PATHS[@]}"
+  do
+      export PATH=$array_item:$PATH
+  done
+
   export AndroidNDKRoot
   export NO_BZIP2=1
 
   cxxflags=""
   for flag in $CXXFLAGS; do cxxflags="$cxxflags cxxflags=$flag"; done
 
+  ./bjam -d0 --show-libraries
+
+  echo "Libraries: $LIBRARIES"
+  echo "Toolset: $TOOLSET"
   { ./bjam -q                         \
          target-os=linux              \
          toolset=$TOOLSET             \
          $cxxflags                    \
-         link=static                  \
+         link=$LINK_STR               \
          threading=multi              \
-         --layout=versioned           \
+         --layout=system           \
          -sICONV_PATH=`pwd`/../libiconv-libicu-android/armeabi \
          -sICU_PATH=`pwd`/../libiconv-libicu-android/armeabi \
          --prefix="./../$BUILD_DIR/"  \

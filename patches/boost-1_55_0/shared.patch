@@ -1,0 +1,80 @@
+diff -rupN boost_1_55_0_orig/boostcpp.jam boost_1_55_0_edit/boostcpp.jam
+--- boost_1_55_0_orig/boostcpp.jam	2013-09-21 13:17:00.000000000 -0700
++++ boost_1_55_0_edit/boostcpp.jam	2015-08-26 12:12:42.000000000 -0700
+@@ -155,7 +155,7 @@ rule tag ( name : type ? : property-set 
+           ! [ $(property-set).get <target-os> ] in windows cygwin darwin aix &&
+           ! [ $(property-set).get <toolset> ] in pgi
+         {
+-            result = $(result).$(BOOST_VERSION)  ;
++            #result = $(result).$(BOOST_VERSION)  ;
+         }
+ 
+         return $(result) ;
+diff -rupN boost_1_55_0_orig/libs/chrono/build/Jamfile.v2 boost_1_55_0_edit/libs/chrono/build/Jamfile.v2
+--- boost_1_55_0_orig/libs/chrono/build/Jamfile.v2	2013-03-28 16:45:26.000000000 -0700
++++ boost_1_55_0_edit/libs/chrono/build/Jamfile.v2	2015-08-26 11:43:39.000000000 -0700
+@@ -11,9 +11,9 @@
+ project boost/chrono
+     : source-location ../src
+     : requirements
+-        <target-os>freebsd:<linkflags>"-lrt" 
+-        <target-os>linux:<linkflags>"-lrt -lpthread" 
+-        <toolset>pgi:<linkflags>"-lrt" 
++        <target-os>freebsd:<linkflags>"-lrt"
++        <target-os>linux:<linkflags>"" 
++        <toolset>pgi:<linkflags>"-lrt"
+         #<threading>single:<define>BOOST_CHRONO_THREAD_DISABLED
+         <library>/boost/system//boost_system
+         #<define>BOOST_ERROR_CODE_HEADER_ONLY
+@@ -27,7 +27,7 @@ project boost/chrono
+         #<define>BOOST_COMMON_TYPE_USES_ARRAY_ASSERT
+         #<define>BOOST_RATIO_USES_ARRAY_ASSERT
+         #<define>BOOST_CHRONO_USES_ARRAY_ASSERT
+-        <toolset>sun:<define>__typeof__=__typeof__ 
++        <toolset>sun:<define>__typeof__=__typeof__
+         <define>BOOST_SYSTEM_NO_DEPRECATED
+         #<toolset>gcc-3.4.4:<linkflags>--enable-auto-import
+         #<toolset>gcc-4.3.4:<linkflags>--enable-auto-import
+@@ -70,7 +70,7 @@ project boost/chrono
+         <toolset>intel:<cxxflags>-wd193,304,383,444
+         <toolset>intel:<cxxflags>-wd593,981
+         <toolset>intel:<cxxflags>-wd1418
+-	  <toolset>intel:<cxxflags>-wd2415 
++	  <toolset>intel:<cxxflags>-wd2415
+ 
+ 
+ 
+@@ -90,7 +90,7 @@ project boost/chrono
+         #<define>BOOST_CHRONO_USES_ARRAY_ASSERT
+         #<toolset>vacpp:<define>BOOST_COMMON_TYPE_DONT_USE_TYPEOF
+         <toolset>vacpp:<define>BOOST_TYPEOF_EMULATION
+-        <toolset>sun:<define>__typeof__=__typeof__ 
++        <toolset>sun:<define>__typeof__=__typeof__
+ 
+         <define>BOOST_SYSTEM_NO_DEPRECATED
+         <link>shared:<define>BOOST_CHRONO_DYN_LINK=1
+@@ -103,11 +103,10 @@ project boost/chrono
+ 
+ SOURCES = chrono thread_clock process_cpu_clocks ;
+ 
+- 
++
+ lib boost_chrono
+     : $(SOURCES).cpp
+     :
+     <link>shared:<define>BOOST_ALL_DYN_LINK=1 # tell source we're building dll's
+     <link>static:<define>BOOST_All_STATIC_LINK=1 # tell source we're building static lib's
+     ;
+-
+diff -rupN boost_1_55_0_orig/tools/build/v2/tools/gcc.jam boost_1_55_0_edit/tools/build/v2/tools/gcc.jam
+--- boost_1_55_0_orig/tools/build/v2/tools/gcc.jam	2013-05-12 11:02:44.000000000 -0700
++++ boost_1_55_0_edit/tools/build/v2/tools/gcc.jam	2015-08-26 11:39:48.000000000 -0700
+@@ -1032,7 +1032,7 @@ rule setup-threading ( targets * : sourc
+             case *bsd    : option = -pthread ;  # There is no -lrt on BSD.
+             case sgi     : # gcc on IRIX does not support multi-threading.
+             case darwin  : # No threading options.
+-            case *       : option = -pthread ; libs = rt ;
++            case *       : option = -pthread ;
+         }
+ 
+         if $(option)
